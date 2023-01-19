@@ -2,16 +2,12 @@ import { createApi, parseResponse } from "@thinknimble/tn-models";
 import axios from "axios";
 import { z } from "zod";
 
-const todoCreateZod = z.object({
+const createZodRaw = {
   completed: z.boolean().default(false),
   content: z.string().min(1),
-});
+};
 
-const todoEntityZod = z
-  .object({
-    id: z.number(),
-  })
-  .merge(todoCreateZod);
+const entityZodRaw = { ...createZodRaw, id: z.number() };
 
 const client = axios.create({
   baseURL: "http://localhost:3000",
@@ -23,9 +19,9 @@ export const todoApi = createApi(
     client,
     endpoint,
     models: {
-      create: todoCreateZod,
-      entity: todoEntityZod,
-      update: todoCreateZod.partial(),
+      create: createZodRaw,
+      entity: entityZodRaw,
+      update: createZodRaw,
     },
   },
   {
@@ -37,7 +33,7 @@ export const todoApi = createApi(
       const result = parseResponse({
         data: todos.data,
         uri: "todos",
-        zod: z.array(todoEntityZod),
+        zod: z.array(z.object(entityZodRaw)),
       });
       return result;
     },

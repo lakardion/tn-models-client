@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "json-server": "json-server --watch db.json"
+    "json-server": "json-server --watch db.json",
+    "refresh-models-local": "npm rm @thinknimble/tn-models; npm i file:../tn-models/add-ts",
+    "refresh-models": "npm rm @thinknimble/tn-models; npm i github:thinknimble/tn-models#prototype/tn-models-fp"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.22.0",

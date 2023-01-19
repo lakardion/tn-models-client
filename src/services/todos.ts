@@ -1,4 +1,4 @@
-import { createApi } from "@thinknimble/tn-models";
+import { createApi, parseResponse } from "@thinknimble/tn-models";
 import axios from "axios";
 import { z } from "zod";
 
@@ -9,7 +9,7 @@ const todoCreateZod = z.object({
 
 const todoEntityZod = z
   .object({
-    id: z.string().uuid(),
+    id: z.number(),
   })
   .merge(todoCreateZod);
 
@@ -29,8 +29,20 @@ export const todoApi = createApi(
     },
   },
   {
+    /**
+     * need to declare another list since we don't have pagination in json-server
+     */
     list: async () => {
-      return 10;
+      const todos = await client.get("todos");
+      const result = parseResponse({
+        data: todos.data,
+        uri: "todos",
+        zod: z.array(todoEntityZod),
+      });
+      return result;
+    },
+    delete: async (id: number) => {
+      return client.delete(`${endpoint}/${id}`);
     },
   }
 );

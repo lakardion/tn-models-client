@@ -21,5 +21,5 @@ app.use(bodyParser.json());
 app.use("/todos", todosRouter);
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`listening on port ${port}`);
 });

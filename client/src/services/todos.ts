@@ -1,10 +1,15 @@
-import { createApi, parseResponse } from "@thinknimble/tn-models";
+import {
+  createApi,
+  createCustomServiceCall,
+  parseResponse,
+} from "@thinknimble/tn-models";
 import axios from "axios";
 import { z } from "zod";
 
 const createZodRaw = {
   completed: z.boolean().default(false),
   content: z.string().min(1),
+  completedDate: z.string().datetime(),
 };
 
 const entityZodRaw = { ...createZodRaw, id: z.number() };
@@ -25,20 +30,17 @@ export const todoApi = createApi(
     },
   },
   {
-    /**
-     * need to declare another list since we don't have pagination in json-server
-     */
-    list: async () => {
-      const todos = await client.get("todos");
-      const result = parseResponse({
-        data: todos.data,
-        uri: "todos",
-        zod: z.array(z.object(entityZodRaw)),
-      });
-      return result;
-    },
-    delete: async (id: number) => {
-      return client.delete(`${endpoint}/${id}`);
-    },
+    delete: createCustomServiceCall({
+      inputShape: z.number(),
+      outputShape: {
+        nothing: z.any(),
+      },
+      callback: async ({ client, input, utils }) => {
+        await client.delete(`todos/${input}`);
+        return {
+          nothing: "faulty api bro",
+        };
+      },
+    }),
   }
 );

@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import "./App.css";
 import {
   QueryClient,
@@ -37,6 +37,7 @@ const AppInner = () => {
     addTodo({
       completed: false,
       content: value,
+      completedDate: new Date().toISOString(),
     });
   };
   const [value, setValue] = useState("");
@@ -48,10 +49,14 @@ const AppInner = () => {
     mutationFn: todoApi.create,
     onSuccess() {
       qClient.invalidateQueries(["todos"]);
+      setValue("");
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     },
   });
   const { mutate: deleteTodo, isLoading: isDeleting } = useMutation({
-    mutationFn: todoApi.customEndpoints.delete,
+    mutationFn: todoApi.customServiceCalls.delete,
     onSuccess() {
       qClient.invalidateQueries(["todos"]);
     },
@@ -60,66 +65,88 @@ const AppInner = () => {
   const { data } = useQuery(
     ["todos"],
     () => {
-      const result = todoApi.customEndpoints.list();
+      const result = todoApi.list();
       return result;
     },
     {
       keepPreviousData: true,
     }
   );
+  const inputRef = useRef<HTMLInputElement | null>();
 
   return (
-    <main>
-      <SelectedTodo id={selectedTodo} />
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.25rem" }}>
-        <input value={value} onChange={onInputChange} />
-        <button disabled={isAddingTodo}>
-          {isAddingTodo ? "Loading" : "Add"}
-        </button>
-      </form>
-      {data?.length ? (
-        <ul
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-          }}
+    <main style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+      <section>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", gap: "0.25rem" }}
         >
-          {data.map((t) => (
-            <li key={t.id}>
-              <button
-                onClick={() => {
-                  setSelectedTodo(t.id);
-                }}
-                style={{ display: "flex", gap: "0.5rem" }}
-              >
-                <p
+          <input
+            value={value}
+            onChange={onInputChange}
+            disabled={isAddingTodo}
+            ref={(ref) => {
+              inputRef.current = ref;
+            }}
+            key={"input-todos"}
+            placeholder="Add your TODO"
+          />
+          <button disabled={isAddingTodo}>
+            {isAddingTodo ? "Loading" : "Add"}
+          </button>
+        </form>
+        {data?.results.length ? (
+          <ul
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
+            {data.results.map((t) => (
+              <li key={t.id}>
+                <div
+                  onClick={() => {
+                    setSelectedTodo(t.id);
+                  }}
                   style={{
-                    textDecoration: t.completed ? "line-through" : undefined,
-                    color: t.completed ? "rgba(0,0,0,0.5)" : undefined,
+                    display: "flex",
+                    gap: "0.5rem",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
-                  {t.content}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteTodo(t.id);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.stopPropagation();
-                  }}
-                  disabled={isDeleting}
-                >
-                  x
-                </button>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p style={{ fontStyle: "italic" }}> No todos added yet.</p>
-      )}
+                  <p
+                    style={{
+                      textDecoration: t.completed ? "line-through" : undefined,
+                      color: t.completed ? "rgba(0,0,0,0.5)" : undefined,
+                    }}
+                  >
+                    {t.content}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTodo(t.id);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.stopPropagation();
+                    }}
+                    disabled={isDeleting}
+                  >
+                    x
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ fontStyle: "italic" }}> No todos added yet.</p>
+        )}
+      </section>
+      <section style={{ flexGrow: 1 }}>
+        <SelectedTodo id={selectedTodo} />
+      </section>
     </main>
   );
 };

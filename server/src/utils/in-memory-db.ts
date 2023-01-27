@@ -94,16 +94,15 @@ export class InMemoryDB {
     this._todos[pageIdx][todoIdx] = todo;
   }
   getTodos(params?: {
-    pageSize?: string;
+    page_size?: string;
     page?: string;
   }): z.infer<ReturnType<typeof getPaginatedZod<typeof entityZodRaw>>> {
     const pageAsIndex = parseInt(params?.page ?? DEFAULT_PAGE.toString()) - 1;
-    const pageSize = parseInt(params?.pageSize ?? DEFAULT_PAGE_SIZE.toString());
+    const pageSize = parseInt(
+      params?.page_size ?? DEFAULT_PAGE_SIZE.toString()
+    );
+    this.redistributeTodos(pageSize);
 
-    if (pageSize !== this._savedPageSize) {
-      this.redistributeTodos(pageSize);
-      this._savedPageSize = pageSize;
-    }
     return {
       count: this._todos.reduce((sum, ts) => sum + ts.length, 0),
       next:

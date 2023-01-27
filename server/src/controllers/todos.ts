@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { createZod, entityZod, InMemoryDB } from "../utils/in-memory-db.js";
 
 const inMemoryDb = new InMemoryDB();
@@ -11,9 +11,20 @@ const paginationQueryFiltersZod = z
   })
   .optional();
 
+type PaginationQueryFilters = z.infer<typeof paginationQueryFiltersZod>;
+
 export const getTodos: RequestHandler = (req, res) => {
   const query = req.query;
-  const parsedQuery = paginationQueryFiltersZod.parse(query);
+  let parsedQuery: PaginationQueryFilters;
+  try {
+    parsedQuery = paginationQueryFiltersZod.parse(query);
+  } catch (err) {
+    const zodErr = err as ZodError<PaginationQueryFilters>;
+    res.status(400).json({
+      message: "Your input was invalid",
+      errors: zodErr.errors,
+    });
+  }
   const page = parseInt(parsedQuery?.page ?? "1");
   if (page !== 1 && page > inMemoryDb.maxPages) {
     res.status(404).json({
@@ -46,16 +57,18 @@ export const getTodo: RequestHandler = (req, res) => {
 
 export const createTodo: RequestHandler = (req, res) => {
   const body = req.body;
+  let parsed: z.infer<typeof createZod>;
   try {
-    const parsed = createZod.parse(body);
-    const created = inMemoryDb.add(parsed);
-    res.status(201).json(created);
+    parsed = createZod.parse(body);
   } catch (err) {
     console.log(err);
     res.status(400).json({
       message: "The todo format is not valid",
     });
+    return;
   }
+  const created = inMemoryDb.add(parsed);
+  res.status(201).json(created);
 };
 
 export const deleteTodo: RequestHandler = (req, res) => {

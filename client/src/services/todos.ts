@@ -19,6 +19,15 @@ const client = axios.create({
 });
 const endpoint = "todos";
 
+const deleteTodo = createCustomServiceCall(
+  {
+    inputShape: z.number(),
+  },
+  async ({ input, client, endpoint }) => {
+    await client.delete(`${endpoint}/${input}`);
+  }
+);
+
 export const todoApi = createApi(
   {
     client,
@@ -26,21 +35,9 @@ export const todoApi = createApi(
     models: {
       create: createZodRaw,
       entity: entityZodRaw,
-      update: createZodRaw,
     },
   },
   {
-    delete: createCustomServiceCall({
-      inputShape: z.number(),
-      outputShape: {
-        nothing: z.any(),
-      },
-      callback: async ({ client, input, utils }) => {
-        await client.delete(`todos/${input}`);
-        return {
-          nothing: "faulty api bro",
-        };
-      },
-    }),
+    deleteTodo,
   }
 );

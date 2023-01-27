@@ -1,5 +1,3 @@
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import "./App.css";
 import {
   QueryClient,
   QueryClientProvider,
@@ -7,9 +5,15 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { Pagination } from "@thinknimble/tn-models";
+import { ChangeEvent, FormEvent, useCallback, useMemo, useState } from "react";
+import { PaginationControls } from "./components/pagination-controls";
 import { todoApi } from "./services/todos";
+import { usePaginatedRequest, usePaginationHandlers } from "./utils";
 
 const client = new QueryClient();
+
+const DEFAULT_PAGE_SIZE = 2;
 
 const SelectedTodo = ({ id }: { id: number }) => {
   const { data: todoData } = useQuery(["todo", id], {
@@ -21,11 +25,23 @@ const SelectedTodo = ({ id }: { id: number }) => {
   });
   if (!todoData) return <></>;
   return (
-    <section style={{ display: "flex", flexDirection: "column" }}>
-      <h1 style={{ fontSize: "2rem", textAlign: "center" }}>
-        TODO #{todoData?.id}
-      </h1>
-      <p style={{ fontSize: "1rem" }}>{todoData?.content}</p>
+    <section
+      style={{ display: "flex", flexDirection: "column", padding: "1rem" }}
+    >
+      <section
+        style={{
+          borderStyle: "solid",
+          borderColor: "rgba(0 0 0 / 30%)",
+          borderRadius: "8px",
+          borderWidth: 0.5,
+          padding: "4rem",
+        }}
+      >
+        <h1 style={{ fontSize: "2rem", textAlign: "center" }}>
+          TODO #{todoData?.id}
+        </h1>
+        <p style={{ fontSize: "1rem" }}>{todoData?.content}</p>
+      </section>
     </section>
   );
 };
@@ -47,74 +63,77 @@ const AppInner = () => {
   const qClient = useQueryClient();
   const { mutate: addTodo, isLoading: isAddingTodo } = useMutation({
     mutationFn: todoApi.create,
-    onSuccess() {
-      qClient.invalidateQueries(["todos"]);
+    async onSuccess() {
+      await qClient.invalidateQueries(["todos"]);
       setValue("");
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
     },
   });
   const { mutate: deleteTodo, isLoading: isDeleting } = useMutation({
-    mutationFn: todoApi.customServiceCalls.delete,
+    mutationFn: todoApi.csc.deleteTodo,
     onSuccess() {
       qClient.invalidateQueries(["todos"]);
     },
   });
 
-  const { data } = useQuery(
-    ["todos"],
-    () => {
-      const result = todoApi.list();
-      return result;
-    },
-    {
-      keepPreviousData: true,
-    }
+  const paginatedRequest = useCallback((page: number) => {
+    return todoApi.list({
+      pagination: new Pagination({
+        page,
+        size: DEFAULT_PAGE_SIZE,
+      }),
+    });
+  }, []);
+
+  const {
+    data: paginatedTodos,
+    setPage,
+    page,
+  } = usePaginatedRequest(paginatedRequest, "todos");
+  const maxPage = useMemo(
+    () =>
+      paginatedTodos?.count
+        ? Math.ceil(paginatedTodos.count / DEFAULT_PAGE_SIZE)
+        : 1,
+
+    [paginatedTodos?.count]
   );
-  const inputRef = useRef<HTMLInputElement | null>();
+  const { first, last, next, previous } = usePaginationHandlers(
+    setPage,
+    maxPage
+  );
 
   return (
-    <main style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+    <main className="flex justify-center gap-4">
       <section>
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", gap: "0.25rem" }}
-        >
+        <form onSubmit={handleSubmit} className="flex gap-1">
           <input
             value={value}
             onChange={onInputChange}
-            disabled={isAddingTodo}
-            ref={(ref) => {
-              inputRef.current = ref;
-            }}
             key={"input-todos"}
             placeholder="Add your TODO"
+            autoFocus
           />
           <button disabled={isAddingTodo}>
             {isAddingTodo ? "Loading" : "Add"}
           </button>
         </form>
-        {data?.results.length ? (
-          <ul
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem",
-            }}
-          >
-            {data.results.map((t) => (
+        <PaginationControls
+          currentPage={page}
+          handleFirst={first}
+          handleLast={last}
+          handleNext={next}
+          handlePrevious={previous}
+          maxPage={maxPage}
+        />
+        {paginatedTodos?.results.length ? (
+          <ul className="flex flex-col gap-2">
+            {paginatedTodos.results.map((t) => (
               <li key={t.id}>
                 <div
                   onClick={() => {
                     setSelectedTodo(t.id);
                   }}
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+                  className="flex gap-2 justify-between items-center"
                 >
                   <p
                     style={{
@@ -141,10 +160,10 @@ const AppInner = () => {
             ))}
           </ul>
         ) : (
-          <p style={{ fontStyle: "italic" }}> No todos added yet.</p>
+          <p className="italic"> No todos added yet.</p>
         )}
       </section>
-      <section style={{ flexGrow: 1 }}>
+      <section className="flex-grow">
         <SelectedTodo id={selectedTodo} />
       </section>
     </main>

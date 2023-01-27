@@ -12,13 +12,11 @@ From root
 npm i
 ```
 
-## Run json server to have a fake backend
+## Run express server from same repo
 
-```
-npm run json-server
-```
+Go to `../server` and follow README to start the server for this client
 
-## Run the project
+## Run this project
 
 ```
 npm run dev

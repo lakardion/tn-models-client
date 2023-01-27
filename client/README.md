@@ -6,8 +6,6 @@ Sample repo that uses alpha functional approach of `@thinknimble/tn-models`
 
 ## Install deps
 
-From root
-
 ```
 npm i
 ```

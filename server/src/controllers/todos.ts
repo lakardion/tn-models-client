@@ -1,6 +1,11 @@
 import { RequestHandler } from "express";
 import { z, ZodError } from "zod";
-import { createZod, entityZod, InMemoryDB } from "../utils/in-memory-db.js";
+import {
+  createZod,
+  entityZod,
+  InMemoryDB,
+  updateZod,
+} from "../utils/in-memory-db.js";
 
 const inMemoryDb = new InMemoryDB();
 
@@ -81,4 +86,60 @@ export const deleteTodo: RequestHandler = (req, res) => {
   }
   inMemoryDb.remove(parseInt(param.todoId));
   res.status(200).send();
+};
+
+export const updateTodo: RequestHandler = (req, res) => {
+  const { params, body } = req;
+  if (!("todoId" in params)) {
+    res.status(400).json({
+      message: "You did not provide a todoId in the url",
+    });
+    return;
+  }
+  let parsed: z.infer<typeof createZod>;
+  try {
+    parsed = createZod.parse(body);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({
+      message: "The todo format is not valid",
+    });
+    return;
+  }
+  const updated = inMemoryDb.update({ ...parsed, id: parseInt(params.todoId) });
+  if (updated === null) {
+    res.status(404).json({
+      message: "No todo found with this id",
+    });
+    return;
+  }
+  res.status(200).json(updated);
+};
+
+export const patchTodo: RequestHandler = (req, res) => {
+  const { params, body } = req;
+  if (!("todoId" in params)) {
+    res.status(400).json({
+      message: "You did not provide a todoId in the url",
+    });
+    return;
+  }
+  let parsed: z.infer<typeof updateZod>;
+  try {
+    parsed = updateZod.parse(body);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({
+      message: "The todo format is not valid",
+    });
+    return;
+  }
+  const updated = inMemoryDb.update({ ...parsed, id: parseInt(params.todoId) });
+  if (updated === null) {
+    res.status(404).json({
+      message: "No todo found with this id",
+    });
+    return;
+  }
+  res.status(200).json(updated);
 };

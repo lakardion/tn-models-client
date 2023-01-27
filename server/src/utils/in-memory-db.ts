@@ -11,12 +11,13 @@ export const getPaginatedZod = <T extends ZodRawShape>(zodRawShape: T) =>
 const createZodRaw = {
   completed: z.boolean().default(false),
   content: z.string().min(1),
-  completed_date: z.string().datetime(),
+  completed_date: z.string().datetime().nullable(),
 };
 
 const entityZodRaw = { ...createZodRaw, id: z.number() };
 
 export const createZod = z.object(createZodRaw);
+export const updateZod = createZod.partial();
 export const entityZod = z.object(entityZodRaw);
 type Todo = z.infer<typeof entityZod>;
 type TodoCreate = z.infer<typeof createZod>;
@@ -89,9 +90,15 @@ export class InMemoryDB {
     }
     this.redistributeTodos(this._savedPageSize);
   }
-  update(todo: Todo) {
-    const [pageIdx, todoIdx] = this.findTodoIdx(todo.id);
-    this._todos[pageIdx][todoIdx] = todo;
+  update(todo: Partial<Todo> & { id: number }) {
+    const { id, ...rest } = todo;
+    const [pageIdx, todoIdx] = this.findTodoIdx(id);
+    if (pageIdx === -1 || todoIdx === -1) return null;
+    this._todos[pageIdx][todoIdx] = {
+      ...this._todos[pageIdx][todoIdx],
+      ...rest,
+    };
+    return this._todos[pageIdx][todoIdx];
   }
   getTodos(params?: {
     page_size?: string;

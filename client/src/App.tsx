@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Pagination } from "@thinknimble/tn-models";
+import { Pagination } from "@thinknimble/tn-models-fp";
 import {
   ChangeEvent,
   ChangeEventHandler,
@@ -26,14 +26,14 @@ const DEFAULT_PAGE_SIZE = 2;
 const SelectedTodo = ({ id }: { id: number }) => {
   const { data: todoData } = useQuery(["todo", id], {
     queryFn: () => {
-      return todoApi.retrieve(id.toString());
+      return todoApi.retrieve(id);
     },
     enabled: Boolean(id),
     keepPreviousData: true,
   });
   const qClient = useQueryClient();
   const { mutate: updatePartial, isLoading: isUpdating } = useMutation({
-    mutationFn: todoApi.csc.updatePartial,
+    mutationFn: todoApi.update,
     onMutate: ({ id, ...rest }) => {
       //optimistic update
       qClient.setQueryData(["todo", id], (oldData) => {
@@ -141,7 +141,6 @@ const AppInner = () => {
     addTodo({
       completed: false,
       content: value,
-      completedDate: null,
     });
   };
   const [value, setValue] = useState("");
@@ -157,7 +156,7 @@ const AppInner = () => {
     },
   });
   const { mutate: deleteTodo, isLoading: isDeleting } = useMutation({
-    mutationFn: todoApi.csc.deleteTodo,
+    mutationFn: todoApi.remove,
     onSuccess() {
       qClient.invalidateQueries(["todos"]);
     },

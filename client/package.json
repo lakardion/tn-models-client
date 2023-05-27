@@ -6,18 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "refresh-models-local": "npm rm @thinknimble/tn-models; npm i 'file:../tn-models/add-ts'",
-    "refresh-models": "npm rm @thinknimble/tn-models; npm i github:thinknimble/tn-models#prototype/tn-models-fp"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.22.0",
+    "@thinknimble/tn-models-fp": "^2.11.1",
     "axios": "^1.2.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.7.1",
-    "zod": "^3.20.2",
-    "@thinknimble/tn-models": "file:../../tn-models/add-ts"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@types/react": "^18.0.26",

@@ -6,8 +6,8 @@ import {
   useState,
   Dispatch,
   SetStateAction,
-} from 'react'
-import { useQuery } from '@tanstack/react-query'
+} from "react";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Get handlers for pagination
@@ -17,27 +17,27 @@ import { useQuery } from '@tanstack/react-query'
  */
 export const usePaginationHandlers = (
   setPage: Dispatch<SetStateAction<number>>,
-  maxPage: number,
+  maxPage: number
 ) => {
   const next = useCallback(() => {
-    setPage(p => {
-      if (p === maxPage) return p
+    setPage((p) => {
+      if (p === maxPage) return p;
 
-      return p + 1
-    })
-  }, [maxPage, setPage])
+      return p + 1;
+    });
+  }, [maxPage, setPage]);
   const previous = useCallback(() => {
-    setPage(p => {
-      if (p === 1) return p
-      return p - 1
-    })
-  }, [setPage])
+    setPage((p) => {
+      if (p === 1) return p;
+      return p - 1;
+    });
+  }, [setPage]);
   const first = useCallback(() => {
-    setPage(1)
-  }, [setPage])
+    setPage(1);
+  }, [setPage]);
   const last = useCallback(() => {
-    setPage(maxPage)
-  }, [maxPage, setPage])
+    setPage(maxPage);
+  }, [maxPage, setPage]);
 
   return useMemo(
     () => ({
@@ -46,31 +46,34 @@ export const usePaginationHandlers = (
       first,
       last,
     }),
-    [first, last, next, previous],
-  )
-}
+    [first, last, next, previous]
+  );
+};
 
 /**
  * Use when you have a rapidly changing value that you want to wait a certain amount of time before you get a value from it
  * @param value
  */
 export const useDebouncedValue = <T>(value: T, timeoutMs: number) => {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setDebounced(value)
-    }, timeoutMs)
+      setDebounced(value);
+    }, timeoutMs);
 
     return () => {
-      clearTimeout(timeoutId)
-    }
-  }, [timeoutMs, value])
+      clearTimeout(timeoutId);
+    };
+  }, [timeoutMs, value]);
 
-  return debounced
-}
+  return debounced;
+};
 
-type GenericPaginatedSearchRequest<T> = (search: string, page: number) => Promise<T>
+type GenericPaginatedSearchRequest<T> = (
+  search: string,
+  page: number
+) => Promise<T>;
 
 /**
  *
@@ -82,44 +85,55 @@ type GenericPaginatedSearchRequest<T> = (search: string, page: number) => Promis
 export const usePaginatedDebouncedSearch = <T>(
   resourceKey: string,
   searchRequest: GenericPaginatedSearchRequest<T>,
-  debounceTimeoutMS = 500,
+  debounceTimeoutMS = 500
 ) => {
   const [searchQuery, setSearchQuery] = useState<{
-    search: string
-    page: number
+    search: string;
+    page: number;
   }>({
-    search: '',
+    search: "",
     page: 1,
-  })
+  });
 
-  const debouncedSearch = useDebouncedValue(searchQuery.search, debounceTimeoutMS)
+  const debouncedSearch = useDebouncedValue(
+    searchQuery.search,
+    debounceTimeoutMS
+  );
 
-  const { data: searchResult, isLoading, isPreviousData, isFetching } = useQuery<T>(
+  const {
+    data: searchResult,
+    isLoading,
+    isPreviousData,
+    isFetching,
+  } = useQuery<T>(
     [resourceKey, debouncedSearch, searchQuery.page],
     () => searchRequest(debouncedSearch, searchQuery.page),
     {
       enabled: Boolean(searchQuery.search),
       keepPreviousData: true,
       retry: 1,
-    },
-  )
+    }
+  );
 
   const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery({ search: e.target.value, page: 1 })
-  }, [])
+    setSearchQuery({ search: e.target.value, page: 1 });
+  }, []);
 
-  const setPage = useCallback((args: Parameters<Dispatch<SetStateAction<number>>>[0]) => {
-    if (typeof args === 'function') {
-      setSearchQuery(sq => ({
-        ...sq,
-        page: args(sq.page),
-      }))
-    } else
-      setSearchQuery(sq => ({
-        ...sq,
-        page: args,
-      }))
-  }, [])
+  const setPage = useCallback(
+    (args: Parameters<Dispatch<SetStateAction<number>>>[0]) => {
+      if (typeof args === "function") {
+        setSearchQuery((sq) => ({
+          ...sq,
+          page: args(sq.page),
+        }));
+      } else
+        setSearchQuery((sq) => ({
+          ...sq,
+          page: args,
+        }));
+    },
+    []
+  );
 
   return useMemo(
     () => ({
@@ -142,11 +156,11 @@ export const usePaginatedDebouncedSearch = <T>(
       isLoading,
       isFetching,
       isPreviousData,
-    ],
-  )
-}
+    ]
+  );
+};
 
-type PaginatedRequest<T> = (page: number) => Promise<T>
+type PaginatedRequest<T> = (page: number) => Promise<T>;
 
 /**
  * Simple hook that wraps around react query and sets up pagination.
@@ -156,16 +170,16 @@ type PaginatedRequest<T> = (page: number) => Promise<T>
  */
 export const usePaginatedRequest = <T>(
   paginatedRequest: PaginatedRequest<T>,
-  resourceName: string,
+  resourceName: string
 ) => {
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(1);
   const { data, isLoading, isPreviousData } = useQuery(
     [resourceName, page],
     () => {
-      return paginatedRequest(page)
+      return paginatedRequest(page);
     },
-    { keepPreviousData: true },
-  )
+    { keepPreviousData: true }
+  );
 
   return useMemo(
     () => ({
@@ -175,6 +189,6 @@ export const usePaginatedRequest = <T>(
       isPreviousData,
       setPage,
     }),
-    [data, isLoading, page, isPreviousData],
-  )
-}
+    [data, isLoading, page, isPreviousData]
+  );
+};
